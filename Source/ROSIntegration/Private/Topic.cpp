@@ -358,7 +358,7 @@ bool UTopic::Subscribe()
 
 bool UTopic::PublishStringMessage(const FString& Message)
 {
-	check(_Implementation->_MessageType == TEXT("std_msgs/String"));
+	//check(_Implementation->_MessageType == TEXT("std_msgs/String"));
 
 	if (!_State.Advertised)
 	{

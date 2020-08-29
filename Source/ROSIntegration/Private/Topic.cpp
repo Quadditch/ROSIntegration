@@ -178,6 +178,7 @@ UTopic::UTopic(const FObjectInitializer& ObjectInitializer)
 		SupportedMessageTypes.Add(EMessageType::String, TEXT("std_msgs/String"));
 		SupportedMessageTypes.Add(EMessageType::Float32, TEXT("std_msgs/Float32"));
 		SupportedMessageTypes.Add(EMessageType::PoseStamped, TEXT("geometry_msgs/PoseStamped"));
+		SupportedMessageTypes.Add(EMessageType::Twist, TEXT("geometry_msgs/Twist"));
 	}
 }
 
@@ -354,7 +355,8 @@ bool UTopic::Subscribe()
 						ConcretePoseStampedMessage->pose.position.y * 100,
 						ConcretePoseStampedMessage->pose.position.z * 100);
 
-					const FQuat Rot = FQuat(ConcretePoseStampedMessage->pose.orientation.x,
+					const FQuat Rot = FQuat(
+						ConcretePoseStampedMessage->pose.orientation.x,
 						ConcretePoseStampedMessage->pose.orientation.y,
 						ConcretePoseStampedMessage->pose.orientation.z,
 						ConcretePoseStampedMessage->pose.orientation.w);
@@ -364,6 +366,30 @@ bool UTopic::Subscribe()
 						{
 							if (!SelfPtr.IsValid()) return;
 							OnPoseStampedMessage(Pos, Rot.Rotator());
+						});
+				}
+				break;
+			}
+			case EMessageType::Twist:
+			{
+				auto ConcreteTwistMessage = StaticCastSharedPtr<ROSMessages::geometry_msgs::Twist>(msg);
+				if (ConcreteTwistMessage.IsValid())
+				{
+					const FVector Linear = FVector(
+						ConcreteTwistMessage->linear.x * 100,
+						ConcreteTwistMessage->linear.y * 100,
+						ConcreteTwistMessage->linear.z * 100);
+
+					const FVector Angular = FVector(
+						ConcreteTwistMessage->angular.x,
+						ConcreteTwistMessage->angular.y,
+						ConcreteTwistMessage->angular.z);
+
+					TWeakPtr<UTopic, ESPMode::ThreadSafe> SelfPtr(_SelfPtr);
+					AsyncTask(ENamedThreads::GameThread, [this, Linear, Angular, SelfPtr]()
+						{
+							if (!SelfPtr.IsValid()) return;
+							OnTwistMessage(Linear, Angular);
 						});
 				}
 				break;

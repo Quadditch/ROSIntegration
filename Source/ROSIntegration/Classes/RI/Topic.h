@@ -19,6 +19,7 @@ enum class EMessageType : uint8
 {
 	String = 0,
 	Float32 = 1,
+	PoseStamped = 2
 };
 
 UCLASS(Blueprintable)
@@ -61,6 +62,9 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = ROS)
 	void OnFloat32Message(const float& Data);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = ROS)
+	void OnPoseStampedMessage(const FVector& Position, const FRotator& Rotation);
 
 	UPROPERTY()
 	UROSIntegrationCore* _ROSIntegrationCore = nullptr;

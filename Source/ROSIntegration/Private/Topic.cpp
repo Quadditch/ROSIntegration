@@ -177,6 +177,7 @@ UTopic::UTopic(const FObjectInitializer& ObjectInitializer)
 	{
 		SupportedMessageTypes.Add(EMessageType::String, TEXT("std_msgs/String"));
 		SupportedMessageTypes.Add(EMessageType::Float32, TEXT("std_msgs/Float32"));
+		SupportedMessageTypes.Add(EMessageType::PoseStamped, TEXT("geometry_msgs/PoseStamped"));
 	}
 }
 
@@ -343,6 +344,30 @@ bool UTopic::Subscribe()
 				}
 				break;
 			}
+			case EMessageType::PoseStamped:
+			{
+				auto ConcretePoseStampedMessage = StaticCastSharedPtr<ROSMessages::geometry_msgs::PoseStamped>(msg);
+				if (ConcretePoseStampedMessage.IsValid())
+				{
+					const FVector Pos = FVector(
+						ConcretePoseStampedMessage->pose.position.x * 100,
+						ConcretePoseStampedMessage->pose.position.y * 100,
+						ConcretePoseStampedMessage->pose.position.z * 100);
+
+					const FQuat Rot = FQuat(ConcretePoseStampedMessage->pose.orientation.x,
+						ConcretePoseStampedMessage->pose.orientation.y,
+						ConcretePoseStampedMessage->pose.orientation.z,
+						ConcretePoseStampedMessage->pose.orientation.w);
+
+					TWeakPtr<UTopic, ESPMode::ThreadSafe> SelfPtr(_SelfPtr);
+					AsyncTask(ENamedThreads::GameThread, [this, Pos, Rot, SelfPtr]()
+						{
+							if (!SelfPtr.IsValid()) return;
+							OnPoseStampedMessage(Pos, Rot.Rotator());
+						});
+				}
+				break;
+			}
 			default:
 				unimplemented();
 				break;
@@ -358,6 +383,7 @@ bool UTopic::Subscribe()
 
 bool UTopic::PublishStringMessage(const FString& Message)
 {
+	//causes crashes
 	//check(_Implementation->_MessageType == TEXT("std_msgs/String"));
 
 	if (!_State.Advertised)
@@ -372,3 +398,6 @@ bool UTopic::PublishStringMessage(const FString& Message)
 	msg->_Data = Message;
 	return _Implementation->Publish(msg);
 }
+
+
+

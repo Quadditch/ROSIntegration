@@ -178,7 +178,9 @@ UTopic::UTopic(const FObjectInitializer& ObjectInitializer)
 		SupportedMessageTypes.Add(EMessageType::String, TEXT("std_msgs/String"));
 		SupportedMessageTypes.Add(EMessageType::Float32, TEXT("std_msgs/Float32"));
 		SupportedMessageTypes.Add(EMessageType::PoseStamped, TEXT("geometry_msgs/PoseStamped"));
+		SupportedMessageTypes.Add(EMessageType::TwistStamped, TEXT("geometry_msgs/TwistStamped"));
 		SupportedMessageTypes.Add(EMessageType::Twist, TEXT("geometry_msgs/Twist"));
+
 	}
 }
 
@@ -370,6 +372,30 @@ bool UTopic::Subscribe()
 				}
 				break;
 			}
+			case EMessageType::TwistStamped:
+			{
+				auto ConcreteTwistStampedMessage = StaticCastSharedPtr<ROSMessages::geometry_msgs::TwistStamped>(msg);
+				if (ConcreteTwistStampedMessage.IsValid())
+				{
+					const FVector Linear = FVector(
+						ConcreteTwistStampedMessage->twist.linear.x * 100,
+						ConcreteTwistStampedMessage->twist.linear.y * 100,
+						ConcreteTwistStampedMessage->twist.linear.z * 100);
+
+					const FVector Angular = FVector(
+						ConcreteTwistStampedMessage->twist.angular.x,
+						ConcreteTwistStampedMessage->twist.angular.y,
+						ConcreteTwistStampedMessage->twist.angular.z);
+
+					TWeakPtr<UTopic, ESPMode::ThreadSafe> SelfPtr(_SelfPtr);
+					AsyncTask(ENamedThreads::GameThread, [this, Linear, Angular, SelfPtr]()
+						{
+							if (!SelfPtr.IsValid()) return;
+							OnTwistStampedMessage(Linear, Angular);
+						});
+				}
+				break;
+			}
 			case EMessageType::Twist:
 			{
 				auto ConcreteTwistMessage = StaticCastSharedPtr<ROSMessages::geometry_msgs::Twist>(msg);
@@ -427,3 +453,38 @@ bool UTopic::PublishStringMessage(const FString& Message)
 
 
 
+bool UTopic::PublishTwistStampedMessage(const FVector& Linear, const FVector& Angular)
+{
+
+	if (!_State.Advertised)
+	{
+		if (!Advertise())
+		{
+			return false;
+		}
+	}
+
+	TSharedPtr<ROSMessages::geometry_msgs::TwistStamped> msg = MakeShareable(new ROSMessages::geometry_msgs::TwistStamped);
+	msg->twist.linear  = Linear;
+	msg->twist.angular = Angular;
+	return _Implementation->Publish(msg);
+}
+
+
+bool UTopic::PublishTwistMessage(const FVector& Linear, const FVector& Angular)
+{
+
+	if (!_State.Advertised)
+	{
+		if (!Advertise())
+		{
+			return false;
+		}
+	}
+
+	TSharedPtr<ROSMessages::geometry_msgs::Twist> msg = MakeShareable(new ROSMessages::geometry_msgs::Twist);
+	msg->linear = Linear;
+	msg->angular = Angular;
+	return _Implementation->Publish(msg);
+
+}

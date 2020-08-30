@@ -20,7 +20,8 @@ enum class EMessageType : uint8
 	String = 0,
 	Float32 = 1,
 	PoseStamped = 2,
-	Twist = 3
+	TwistStamped = 3,
+	Twist = 4
 };
 
 UCLASS(Blueprintable)
@@ -68,6 +69,9 @@ protected:
 	void OnPoseStampedMessage(const FVector& Position, const FRotator& Rotation);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = ROS)
+	void OnTwistStampedMessage(const FVector& Linear, const FVector& Angular);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = ROS)
 	void OnTwistMessage(const FVector& Linear, const FVector& Angular);
 
 	UPROPERTY()
@@ -96,6 +100,12 @@ private:
 
 	UFUNCTION(BlueprintCallable, Category = "ROS|Topic")
 	bool PublishStringMessage(const FString& Message);
+
+	UFUNCTION(BlueprintCallable, Category = "ROS|Topic")
+	bool PublishTwistStampedMessage(const FVector& Linear, const FVector& Angular);
+
+	UFUNCTION(BlueprintCallable, Category = "ROS|Topic")
+	bool PublishTwistMessage(const FVector& Linear, const FVector& Angular);
 
 	// Helper to keep track of self-destruction for async functions
 	TSharedPtr<UTopic, ESPMode::ThreadSafe> _SelfPtr;

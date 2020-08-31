@@ -180,7 +180,7 @@ UTopic::UTopic(const FObjectInitializer& ObjectInitializer)
 		SupportedMessageTypes.Add(EMessageType::PoseStamped, TEXT("geometry_msgs/PoseStamped"));
 		SupportedMessageTypes.Add(EMessageType::TwistStamped, TEXT("geometry_msgs/TwistStamped"));
 		SupportedMessageTypes.Add(EMessageType::Twist, TEXT("geometry_msgs/Twist"));
-
+		SupportedMessageTypes.Add(EMessageType::HomePosition, TEXT("mavros_msgs/HomePosition"));
 	}
 }
 
@@ -420,6 +420,42 @@ bool UTopic::Subscribe()
 				}
 				break;
 			}
+
+			case EMessageType::HomePosition:
+			{
+				auto ConcreteHomePositionMessage = StaticCastSharedPtr<ROSMessages::mavros_msgs::HomePosition>(msg);
+				if (ConcreteHomePositionMessage.IsValid())
+				{
+					const FVector Geo = FVector(
+						ConcreteHomePositionMessage->geo.latitude,
+						ConcreteHomePositionMessage->geo.longitude,
+						ConcreteHomePositionMessage->geo.altitude);
+
+					const FVector Position = FVector(
+						ConcreteHomePositionMessage->position.x,
+						ConcreteHomePositionMessage->position.y,
+						ConcreteHomePositionMessage->position.z);
+
+					const FQuat Orientation = FQuat(
+						ConcreteHomePositionMessage->orientation.x,
+						ConcreteHomePositionMessage->orientation.y,
+						ConcreteHomePositionMessage->orientation.z,
+						ConcreteHomePositionMessage->orientation.w);
+
+					const FVector Approach = FVector(
+						ConcreteHomePositionMessage->approach.x,
+						ConcreteHomePositionMessage->approach.y,
+						ConcreteHomePositionMessage->approach.z);
+
+					TWeakPtr<UTopic, ESPMode::ThreadSafe> SelfPtr(_SelfPtr);
+					AsyncTask(ENamedThreads::GameThread, [this, Geo, Position, Orientation, Approach, SelfPtr]()
+						{
+							if (!SelfPtr.IsValid()) return;
+							OnHomePositionMessage(Geo, Position, Orientation.Rotator(), Approach);
+						});
+				}
+				break;
+			}
 			default:
 				unimplemented();
 				break;
@@ -486,5 +522,4 @@ bool UTopic::PublishTwistMessage(const FVector& Linear, const FVector& Angular)
 	msg->linear = Linear;
 	msg->angular = Angular;
 	return _Implementation->Publish(msg);
-
 }

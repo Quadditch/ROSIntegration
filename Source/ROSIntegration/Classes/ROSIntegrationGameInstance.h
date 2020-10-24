@@ -28,7 +28,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ROS")
 	int32 ROSBridgeServerPort = 9090;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ROS")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ROS")
 	bool bConnectToROS = true;
 
 	UPROPERTY(BlueprintReadOnly, Category = "ROS")

@@ -234,7 +234,7 @@ bool UTopic::Unadvertise()
 
 bool UTopic::Publish(TSharedPtr<FROSBaseMsg> msg)
 {
-	return _State.Connected && _Implementation->Publish(msg);
+	return msg != nullptr && _State.Connected && _Implementation->Publish(msg);
 }
 
 void UTopic::Init(UROSIntegrationCore *Ric, FString Topic, FString MessageType, int32 QueueSize)

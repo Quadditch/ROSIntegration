@@ -24,6 +24,10 @@ static void MarkAllROSObjectsAsDisconnected()
 
 void UROSIntegrationGameInstance::Init()
 {
+	FString ParameterValue;
+	bool param_present = FParse::Value(FCommandLine::Get(), TEXT("ROS"), ParameterValue);
+	bConnectToROS = param_present ? ParameterValue.ToBool() : bConnectToROS;
+
 	if (bConnectToROS)
 	{
 		bool resLock = initMutex_.TryLock(); 

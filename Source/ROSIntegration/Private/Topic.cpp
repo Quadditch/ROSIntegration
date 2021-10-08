@@ -354,21 +354,24 @@ bool UTopic::Subscribe()
 				{
 					const FVector Pos = FVector(
 						ConcretePoseStampedMessage->pose.position.x * 100,
-						ConcretePoseStampedMessage->pose.position.y * -100,
-						ConcretePoseStampedMessage->pose.position.z * 100);
+						ConcretePoseStampedMessage->pose.position.y * 100,
+						ConcretePoseStampedMessage->pose.position.z * -100);
 
 					const FQuat Quat = FQuat(
 						ConcretePoseStampedMessage->pose.orientation.x,
-						ConcretePoseStampedMessage->pose.orientation.y,
-						ConcretePoseStampedMessage->pose.orientation.z,
-						ConcretePoseStampedMessage->pose.orientation.w);
+						ConcretePoseStampedMessage->pose.orientation.y * -1,
+						ConcretePoseStampedMessage->pose.orientation.w * -1,
+						ConcretePoseStampedMessage->pose.orientation.z * -1);
 
 					TWeakPtr<UTopic, ESPMode::ThreadSafe> SelfPtr(_SelfPtr);
 					AsyncTask(ENamedThreads::GameThread, [this, Pos, Quat, SelfPtr]()
 						{
 							if (!SelfPtr.IsValid()) return;
 							FRotator Rot = Quat.Rotator();
-							Rot.Pitch *= -1;
+							Rot.Yaw -= 90;
+							float temp = Rot.Pitch;
+							Rot.Pitch = Rot.Roll;
+							Rot.Roll = temp*-1;
 							OnPoseStampedMessage(Pos, Rot);
 						});
 				}
@@ -381,7 +384,7 @@ bool UTopic::Subscribe()
 				{
 					const FVector Linear = FVector(
 						ConcreteTwistStampedMessage->twist.linear.x * 100,
-						ConcreteTwistStampedMessage->twist.linear.y * -100,
+						ConcreteTwistStampedMessage->twist.linear.y * 100,
 						ConcreteTwistStampedMessage->twist.linear.z * 100);
 
 					const FVector Angular = FVector(
@@ -435,14 +438,14 @@ bool UTopic::Subscribe()
 
 					const FVector Position = FVector(
 						ConcreteHomePositionMessage->position.x * 100,
-						ConcreteHomePositionMessage->position.y * -100,
-						ConcreteHomePositionMessage->position.z * 100);
+						ConcreteHomePositionMessage->position.y * 100,
+						ConcreteHomePositionMessage->position.z * -100);
 
 					const FQuat Orientation = FQuat(
 						ConcreteHomePositionMessage->orientation.x,
-						ConcreteHomePositionMessage->orientation.y,
-						ConcreteHomePositionMessage->orientation.z,
-						ConcreteHomePositionMessage->orientation.w);
+						ConcreteHomePositionMessage->orientation.y * -1,
+						ConcreteHomePositionMessage->orientation.w * -1,
+						ConcreteHomePositionMessage->orientation.z * -1);
 
 					const FVector Approach = FVector(
 						ConcreteHomePositionMessage->approach.x,
@@ -453,7 +456,8 @@ bool UTopic::Subscribe()
 					AsyncTask(ENamedThreads::GameThread, [this, Geo, Position, Orientation, Approach, SelfPtr]()
 						{
 							FRotator Rot = Orientation.Rotator();
-							Rot.Pitch *= -1;
+							Rot.Yaw += 180;
+
 							if (!SelfPtr.IsValid()) return;
 							OnHomePositionMessage(Geo, Position, Rot, Approach);
 						});
@@ -505,9 +509,12 @@ bool UTopic::PublishTwistStampedMessage(const FVector& Linear, const FVector& An
 	}
 
 	TSharedPtr<ROSMessages::geometry_msgs::TwistStamped> msg = MakeShareable(new ROSMessages::geometry_msgs::TwistStamped);
-	msg->twist.linear  = Linear;
+	msg->twist.linear = Linear;
+	msg->twist.linear.y *= -1;
 	msg->twist.angular = Angular;
+	msg->twist.angular.z *= -1;
 	msg->twist.angular.y *= -1;
+
 	return _Implementation->Publish(msg);
 }
 
@@ -525,7 +532,10 @@ bool UTopic::PublishTwistMessage(const FVector& Linear, const FVector& Angular)
 
 	TSharedPtr<ROSMessages::geometry_msgs::Twist> msg = MakeShareable(new ROSMessages::geometry_msgs::Twist);
 	msg->linear = Linear;
+	float temp = msg->linear.y;
+	msg->linear.y = msg->linear.x;
+	msg->linear.x = temp;
 	msg->angular = Angular;
-	msg->angular.y *= -1;
+	msg->angular.z *= -1;
 	return _Implementation->Publish(msg);
 }
